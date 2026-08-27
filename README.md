@@ -17,3 +17,5 @@ Flags:
       --scrape.interval=900  How often to scrape IPMI data in seconds.
       --[no-]version         Show application version.
 ```
+
+[Download](https://github.com/atayts/prometheus-ipmi-sel-exporter/releases/latest/download/ipmi_sel_win_exporter.exe) the latest release.
