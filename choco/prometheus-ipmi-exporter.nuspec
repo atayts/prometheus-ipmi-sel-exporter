@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>prometheus-ipmi-exporter</id>
+    <version>1.0.0</version>
+    <title>Prometheus IPMI Exporter</title>
+    <iconUrl>https://pbs.twimg.com/profile_images/588945677599780865/mrhc1gSh.png</iconUrl>
+    <authors>Client Technology Solutions and Consulting</authors>
+    <description>Prometheus exporter for IPMI System Event Log (SEL) on Windows. Parses hardware events via ipmiutil and exposes alerts as Prometheus metrics. Runs as a Windows Service.</description>
+    <summary>Prometheus exporter for IPMI SEL hardware alerts on Windows</summary>
+    <tags>prometheus ipmi exporter monitoring windows-service</tags>
+    <dependencies>
+      <dependency id="ipmiutil" />
+    </dependencies>
+  </metadata>
+</package>
