@@ -54,4 +54,50 @@ Flags:
       --[no-]version           Show application version.
 ```
 
+Building
+--------
+
+Requires Go 1.25 or newer. The exporter is Windows-only — it links the Windows
+service API — so it must be built for `windows/amd64`:
+
+```powershell
+go build -o ipmi_sel_win_exporter.exe .
+```
+
+From Linux or macOS, cross-compile:
+
+```sh
+GOOS=windows GOARCH=amd64 go build -o ipmi_sel_win_exporter.exe .
+```
+
+Packaging
+---------
+
+The Chocolatey package expects the binary in `choco\tools\`. It is gitignored,
+so build it there before packing. `config.yml` is pulled in from the repository
+root by the `<files>` manifest in the nuspec, so there is only ever one copy of
+it to keep up to date.
+
+```powershell
+go build -o choco\tools\ipmi_sel_win_exporter.exe .
+choco pack choco\prometheus-ipmi-exporter.nuspec
+```
+
+That writes `prometheus-ipmi-exporter.<version>.nupkg` to the current directory.
+Bump `<version>` in the nuspec and the `version` constant in `exporter.go`
+together — the exporter reports the latter as the `version` label on
+`ipmi_alert_details_info`.
+
+To install the package from the local directory as a smoke test:
+
+```powershell
+choco install prometheus-ipmi-exporter -s . -y
+Get-Service ipmi_sel_win_exporter
+Invoke-WebRequest http://localhost:9101/metrics -UseBasicParsing
+```
+
+Upgrading in place keeps an existing
+`C:\Program Files\prometheus-ipmi-exporter\config.yml`; the packaged defaults
+land next to it as `config.yml.example`.
+
 [Download](https://github.com/atayts/prometheus-ipmi-sel-exporter/releases/latest/download/ipmi_sel_win_exporter.exe) the latest release.
