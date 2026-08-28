@@ -16,9 +16,9 @@ if ($svc) {
     Start-Sleep -Seconds 2
 }
 
-# Remove install directory and all contents.
+# Remove install directory and all contents, config.yml included.
 if (Test-Path $installDir) {
-    Write-Host "Removing install directory $installDir..."
+    Write-Host "Removing install directory $installDir (including config.yml)..."
     Remove-Item -Path $installDir -Recurse -Force
 }
 

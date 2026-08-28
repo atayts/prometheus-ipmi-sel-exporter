@@ -1,0 +1,65 @@
+# Configuration for the Prometheus IPMI SEL exporter.
+#
+# The service reads this file at startup from the directory holding
+# ipmi_sel_win_exporter.exe. To change any option, edit this file and run:
+#
+#     Restart-Service ipmi_sel_win_exporter
+#
+# Every key is optional — an omitted key keeps its built-in default, shown
+# below. Startup errors are written to ipmi_sel_win_exporter.log next to the
+# executable.
+
+# Path to the ipmiutil executable.
+ipmiutil_path: 'C:\Program Files (x86)\Sourceforge\ipmiutil\ipmiutil.exe'
+
+# Address to listen on for metrics.
+web_listen_address: ':9101'
+
+# How often to scrape IPMI data, in seconds.
+scrape_interval: 900
+
+# Where to write the log. Leave empty to use ipmi_sel_win_exporter.log next to
+# the executable when running as a service, or stderr when run from a console.
+# The file is rotated to <name>.old once it exceeds 10 MB.
+log_file: ''
+
+# Event filtering. A SEL entry is dropped when its unit or event matches an
+# `ignore` entry exactly, or when its status/event starts with a `statusclear`
+# / `eventclear` prefix. Replacing a list here replaces the default entirely;
+# omit a list to keep the defaults below.
+ignore:
+  - 'Log area reset'
+  - 'General Chassis intrusion'
+  - 'OS graceful shutdown'
+  - 'System Firmware Progress'
+  - 'SEL has no entries'
+  - 'OEM record dd'
+  - 'C: boot completed'
+  - 'Lower non-critical going low'
+  - 'OS Boot'
+  - 'Unknown #0xb2'
+  - 'Unknown #0x17'
+  - 'Unknown #0xd7'
+  - 'Unknown #0xff'
+  - 'Bad User PWD'
+
+statusclear:
+  - 'State Deasserted'
+  - 'Predictive Failure Deasserted'
+  - 'Performance Met'
+  - 'Presence detected'
+  - 'Fully Redundant'
+  - 'Device Present'
+  - 'Redundancy OK'
+  - 'Log Cleared'
+  - 'Chassis OK'
+  - 'Drive Present'
+  - 'Drive Fault OK'
+  - 'Drive Present ()'
+  - 'Power Button pressed'
+  - 'OEM System boot event'
+  - 'Correctable ECC'
+  - 'HiN thresh OK'
+  - 'AC Regained'
+
+eventclear: []

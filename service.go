@@ -10,17 +10,18 @@ import (
 const serviceName = "ipmi_sel_win_exporter"
 
 type exporterService struct {
-	params exporterParams
+	cfg *Config
 }
 
 func (s *exporterService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (bool, uint32) {
 	changes <- svc.Status{State: svc.StartPending}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	done := make(chan struct{})
 
 	go func() {
-		runExporter(ctx, s.params)
+		runExporter(ctx, s.cfg)
 		close(done)
 	}()
 
@@ -48,8 +49,8 @@ func (s *exporterService) Execute(args []string, r <-chan svc.ChangeRequest, cha
 	}
 }
 
-func runAsService(p exporterParams) {
-	err := svc.Run(serviceName, &exporterService{params: p})
+func runAsService(cfg *Config) {
+	err := svc.Run(serviceName, &exporterService{cfg: cfg})
 	if err != nil {
 		log.Fatalf("Failed to run service: %v", err)
 	}

@@ -13,4 +13,9 @@
       <dependency id="ipmiutil" />
     </dependencies>
   </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+    <!-- The sample config lives with the source; ship the single copy. -->
+    <file src="..\config.yml" target="tools\config.yml" />
+  </files>
 </package>

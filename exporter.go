@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -14,17 +13,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gopkg.in/yaml.v3"
 )
 
 const version = "1.0.0"
-
-// Config represents the YAML configuration file for event filtering.
-type Config struct {
-	Ignore      []string `yaml:"ignore"`
-	StatusClear []string `yaml:"statusclear"`
-	EventClear  []string `yaml:"eventclear"`
-}
 
 // selEntry represents a parsed IPMI SEL line.
 type selEntry struct {
@@ -52,40 +43,6 @@ func init() {
 	prometheus.MustRegister(ipmiAlerts)
 	prometheus.MustRegister(ipmiStatus)
 	prometheus.MustRegister(ipmiScrapeErrors)
-}
-
-func loadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading config: %w", err)
-	}
-
-	cfg := &Config{}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("parsing config: %w", err)
-	}
-
-	return cfg, nil
-}
-
-func defaultConfig() *Config {
-	return &Config{
-		Ignore: []string{
-			"Log area reset", "General Chassis intrusion", "OS graceful shutdown",
-			"System Firmware Progress", "SEL has no entries", "OEM record dd",
-			"C: boot completed", "Lower non-critical going low", "OS Boot",
-			"Unknown #0xb2", "Unknown #0x17", "Unknown #0xd7", "Unknown #0xff",
-			"Bad User PWD",
-		},
-		StatusClear: []string{
-			"State Deasserted", "Predictive Failure Deasserted", "Performance Met",
-			"Presence detected", "Fully Redundant", "Device Present",
-			"Redundancy OK", "Log Cleared", "Chassis OK", "Drive Present", "Drive Fault OK",
-			"Drive Present ()", "Power Button pressed", "OEM System boot event",
-			"Correctable ECC", "HiN thresh OK", "AC Regained",
-		},
-		EventClear: []string{},
-	}
 }
 
 func runIpmiutil(ipmiutilPath string) []string {
@@ -177,8 +134,8 @@ func hasPrefix(s string, prefixes []string) bool {
 	return false
 }
 
-func collectMetrics(cfg *Config, ipmiutilPath string) {
-	lines := runIpmiutil(ipmiutilPath)
+func collectMetrics(cfg *Config) {
+	lines := runIpmiutil(cfg.IpmiutilPath)
 	if lines == nil {
 		ipmiScrapeErrors.Inc()
 		return
@@ -201,46 +158,25 @@ func collectMetrics(cfg *Config, ipmiutilPath string) {
 	ipmiScrapeErrors.Set(0)
 }
 
-// exporterParams holds the parsed CLI flags needed by the exporter.
-type exporterParams struct {
-	IpmiutilPath   string
-	ConfigPath     string
-	ListenAddr     string
-	ScrapeInterval int
-}
-
 // runExporter starts the HTTP server and collection loop, blocking until ctx is cancelled.
-func runExporter(ctx context.Context, p exporterParams) {
-	var cfg *Config
-	if p.ConfigPath != "" {
-		var err error
-		cfg, err = loadConfig(p.ConfigPath)
-		if err != nil {
-			log.Fatalf("Failed to load config: %v", err)
-		}
-		log.Printf("Loaded config from %s", p.ConfigPath)
-	} else {
-		cfg = defaultConfig()
-		log.Println("Using built-in default config (no config file specified)")
-	}
-
+func runExporter(ctx context.Context, cfg *Config) {
 	log.Printf("Config: listen=%s scrape_interval=%ds ipmiutil=%s ignore=%d patterns statusclear=%d patterns eventclear=%d patterns",
-		p.ListenAddr, p.ScrapeInterval, p.IpmiutilPath, len(cfg.Ignore), len(cfg.StatusClear), len(cfg.EventClear))
+		cfg.ListenAddress, cfg.ScrapeInterval, cfg.IpmiutilPath, len(cfg.Ignore), len(cfg.StatusClear), len(cfg.EventClear))
 
 	log.Println("Performing initial IPMI SEL data collection...")
-	collectMetrics(cfg, p.IpmiutilPath)
+	collectMetrics(cfg)
 
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(time.Duration(p.ScrapeInterval) * time.Second)
+		ticker := time.NewTicker(time.Duration(cfg.ScrapeInterval) * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				collectMetrics(cfg, p.IpmiutilPath)
+				collectMetrics(cfg)
 			case <-ctx.Done():
 				log.Println("Shutting down collection loop")
 				return
@@ -254,7 +190,7 @@ func runExporter(ctx context.Context, p exporterParams) {
 		fmt.Fprintf(w, `<html><body><h1>IPMI SEL Windows Exporter</h1><p><a href="/metrics">Metrics</a></p></body></html>`)
 	})
 
-	srv := &http.Server{Addr: p.ListenAddr, Handler: mux}
+	srv := &http.Server{Addr: cfg.ListenAddress, Handler: mux}
 
 	go func() {
 		<-ctx.Done()
@@ -264,7 +200,7 @@ func runExporter(ctx context.Context, p exporterParams) {
 		srv.Shutdown(shutdownCtx)
 	}()
 
-	log.Printf("Listening on %s", p.ListenAddr)
+	log.Printf("Listening on %s", cfg.ListenAddress)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatalf("HTTP server error: %v", err)
 	}
