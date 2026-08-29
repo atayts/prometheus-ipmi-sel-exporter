@@ -100,4 +100,12 @@ Upgrading in place keeps an existing
 `C:\Program Files\prometheus-ipmi-exporter\config.yml`; the packaged defaults
 land next to it as `config.yml.example`.
 
+An upgrade stops and removes the service before touching any files: the
+installed version's `chocolateyBeforeModify.ps1` stops it, and the new
+`chocolateyInstall.ps1` stops and deletes it again before copying. Otherwise
+the running service holds an open handle on the executable and the copy fails
+with "the process cannot access the file ... because it is being used by
+another process". The service is recreated and started at the end of the
+install.
+
 [Download](https://github.com/atayts/prometheus-ipmi-sel-exporter/releases/latest/download/ipmi_sel_win_exporter.exe) the latest release.

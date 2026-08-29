@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>prometheus-ipmi-exporter</id>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <title>Prometheus IPMI Exporter</title>
     <iconUrl>https://pbs.twimg.com/profile_images/588945677599780865/mrhc1gSh.png</iconUrl>
     <authors>Client Technology Solutions and Consulting</authors>
